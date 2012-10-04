@@ -29,11 +29,13 @@ truncateHtml n html = case go n html of Tagged n' html' -> if n' /= n then Just 
         go i (AddAttribute t key value h) = fmap (AddAttribute t key value) (go i h)
         go i (AddCustomAttribute t key value h) = fmap (AddCustomAttribute t key value) (go i h)
         go i (Append h1 h2) = case go i h1 of
-            Tagged j h1' -> fmap (Append h1') (go j h2)
+          Tagged j h1' | j <= 0 -> Tagged j (Append h1' Empty) -- FIXME: we actually want to return just Tagged j h1', but can't due to a type error
+          Tagged j h1' -> fmap (Append h1') (go j h2)
         go i Empty = Tagged i Empty
         go i (Content content) = fmap Content (truncateChoiceString i content)
         
 splitAt' :: Int -> ChoiceString -> (ChoiceString, ChoiceString)
+splitAt' i str | i <= 0 = (EmptyChoiceString, str)
 splitAt' i (Static str) = case splitAt i ((getString str) "") of (str',str'') -> (Static (fromString str'),Static (fromString str''))
 splitAt' i (String str) = case splitAt i str of (str',str'') -> (String str',String str'')
 splitAt' i (Text str) = case T.splitAt i str of (str',str'') -> (Text str',Text str'')
@@ -41,10 +43,9 @@ splitAt' i (ByteString str) = case B.splitAt i str of (str',str'') -> (ByteStrin
 splitAt' i (PreEscaped str) = case splitAt' i str of (str',str'') -> (PreEscaped str',PreEscaped str'')
 splitAt' _ (External str) = (External str,External EmptyChoiceString) -- note: these should not be truncated, so the behavior is a bit special here
 splitAt' i (AppendChoiceString str1 str2) = case splitAt' i str1 of
-    (str1',str1'') -> 
-        if empty' str1'' then case splitAt' (i - (length' str1')) str2 of
-            (str2',str2'') -> (AppendChoiceString str1' str2',str2'')
-        else (str1',AppendChoiceString str1'' str2)
+  (str1',str1'') -> if not (empty' str1'') then (str1', AppendChoiceString str1'' str2)
+                   else case splitAt' (i - (length' str1)) str2 of
+                     (str2',str2'') -> (AppendChoiceString str1' str2', str2'')
 splitAt' _ EmptyChoiceString = (EmptyChoiceString,EmptyChoiceString)
 
 length' :: ChoiceString -> Int
