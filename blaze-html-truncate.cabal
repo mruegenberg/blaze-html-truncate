@@ -9,7 +9,7 @@ homepage:            http://github.com/mruegenberg/blaze-html-truncate
 license:             BSD3
 license-file:        LICENSE
 author:              Marcel Ruegenberg
-maintainer:          m.ruegenberg@picodesign.de
+maintainer:          m [dot] ruegenberg [at] picodesign [dot] de
 -- copyright:           
 category:            Text
 build-type:          Simple
