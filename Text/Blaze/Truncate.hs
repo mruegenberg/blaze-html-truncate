@@ -1,8 +1,8 @@
 module Text.Blaze.Truncate(truncateHtml) where
 
 -- from Blaze 0.4 to 0.5: Html -> Markup; HtmlM -> MarkupM; AddCustomAttribute has an additional first argument
-import Text.Blaze(Html)
-import Text.Blaze.Internal(HtmlM(..),ChoiceString(..),StaticString(..))
+import Text.Blaze(Markup)
+import Text.Blaze.Internal(MarkupM(..),ChoiceString(..),StaticString(..))
 import Data.Char
 import Data.Text(Text)
 import qualified Data.Text as T
@@ -17,9 +17,6 @@ import qualified Text.StringLike as SL
 data Tagged a = Tagged Int a
 instance Functor Tagged where
     fmap f (Tagged n a) = Tagged n (f a)
-    
--- type Html = Markup
--- type HtmlM a = MarkupM a
 
 -- (inefficient `take` for StringLike)
 splitAtSL :: SL.StringLike a => Int -> a -> (a,a)
@@ -74,15 +71,15 @@ dropWhileEndPreEscapedHtml p txt = (TS.renderTags . reverse . (go 0) . reverse .
 -- | Truncate the given HTML to a certain length, preserving tags. Returns the truncated Html or `Nothing` if no truncation occured.
 --   Words are preserved, so if the truncated text ends within some word, that whole word is cut.
 truncateHtml :: Int    -- ^ The amount of characters (not counting tags) which the truncated text should have at most
-             -> Html   -- ^ The HTML to truncate
-             -> Maybe Html  -- ^ `Just` the truncated HTML or `Nothing` if no truncation occured
+             -> Markup   -- ^ The HTML to truncate
+             -> Maybe Markup  -- ^ `Just` the truncated HTML or `Nothing` if no truncation occured
 truncateHtml n html = case go n html of Tagged n' html' -> if n' /= n then Just html' else Nothing
     where
-        go :: Int -> HtmlM b -> Tagged (HtmlM b)
+        go :: Int -> MarkupM b -> Tagged (MarkupM b)
         go i (Parent t open close content) = fmap (Parent t open close) (go i content)
         go i (Leaf t begin end) = Tagged i (Leaf t begin end)
         go i (AddAttribute t key value h) = fmap (AddAttribute t key value) (go i h)
-        go i (AddCustomAttribute t key value h) = fmap (AddCustomAttribute t key value) (go i h)
+        go i (AddCustomAttribute key value h) = fmap (AddCustomAttribute key value) (go i h)
         go i (Append h1 h2) = case go i h1 of
           Tagged j h1' | j <= 0 -> Tagged j (Append h1' Empty) -- FIXME: we actually want to return just Tagged j h1', but can't due to a type error
           Tagged j h1' -> fmap (Append h1') (go j h2)
