@@ -73,7 +73,7 @@ dropWhileEndPreEscapedHtml p txt = (TS.renderTags . reverse . (go 0) . reverse .
 truncateHtml :: Int    -- ^ The amount of characters (not counting tags) which the truncated text should have at most
              -> Markup   -- ^ The HTML to truncate
              -> Maybe Markup  -- ^ `Just` the truncated HTML or `Nothing` if no truncation occured
-truncateHtml n html = case go n html of Tagged n' html' -> if n' /= n then Just html' else Nothing
+truncateHtml n html = case go n html of Tagged n' html' -> if n' <= 0 then Just html' else Nothing
     where
         go :: Int -> MarkupM b -> Tagged (MarkupM b)
         go i (Parent t open close content) = fmap (Parent t open close) (go i content)
@@ -172,6 +172,5 @@ truncateChoiceString :: Int -> ChoiceString -> Tagged ChoiceString
 truncateChoiceString i str = case splitAt' i str of 
   (str',rst) -> if (empty' rst) || (isSpace $ head' rst)
                then Tagged (i - (length' str')) str'
---                else Tagged (i - (length' str')) str'
                else case dropWhileEnd' (not. isSpace) (dropWhileEnd' isSpace str') of
                  str'' -> Tagged (i - length' str'') str''
