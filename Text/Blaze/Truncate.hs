@@ -76,7 +76,7 @@ dropWhileEndPreEscapedHtml p txt = (TS.renderTags . reverse . (go 0) . reverse .
 truncateHtml :: Int    -- ^ The amount of characters (not counting tags) which the truncated text should have at most
              -> Html   -- ^ The HTML to truncate
              -> Maybe Html  -- ^ `Just` the truncated HTML or `Nothing` if no truncation occured
-truncateHtml n html = case go n html of Tagged n' html' -> if n' /= n then Just html' else Nothing
+truncateHtml n html = case go n html of Tagged n' html' -> if n' <= 0 then Just html' else Nothing
     where
         go :: Int -> HtmlM b -> Tagged (HtmlM b)
         go i (Parent t open close content) = fmap (Parent t open close) (go i content)
