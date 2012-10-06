@@ -1,6 +1,5 @@
 module Text.Blaze.Truncate(truncateHtml) where
 
--- from Blaze 0.4 to 0.5: Html -> Markup; HtmlM -> MarkupM; AddCustomAttribute has an additional first argument
 import Text.Blaze(Markup)
 import Text.Blaze.Internal(MarkupM(..),ChoiceString(..),StaticString(..))
 import Data.Char
