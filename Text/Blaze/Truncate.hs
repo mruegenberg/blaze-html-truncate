@@ -56,7 +56,7 @@ splitAtPreEscapedHtml n txt = case go n 0 (TS.parseTags txt) of (a,b) -> (TS.ren
                (ts',ts'') -> ((TS.TagText str') : ts', (TS.TagText str'') : ts'')
                
 dropWhileEndPreEscapedHtml :: SL.StringLike str => (Char -> Bool) -> str -> str
-dropWhileEndPreEscapedHtml p txt = (TS.renderTags . reverse . (go 0) . reverse . TS.parseTags) txt
+dropWhileEndPreEscapedHtml p txt = (TS.renderTags . reverse . filterEmptyTags . (go 0) . reverse . TS.parseTags) txt
    where
        go :: (SL.StringLike str) => Int -> [TS.Tag str] -> [TS.Tag str]
        go _ [] = []
@@ -70,13 +70,16 @@ dropWhileEndPreEscapedHtml p txt = (TS.renderTags . reverse . (go 0) . reverse .
          else case dropWhileEndSL p str of
            str' -> if not (SL.strNull str') then (TS.TagText str') : ts
                   else go openTgs ts
+       filterEmptyTags ((TS.TagClose _) : (TS.TagOpen _ _) : ts) = filterEmptyTags ts
+       filterEmptyTags (t : ts) = t : (filterEmptyTags ts)
+       filterEmptyTags [] = []
 
 -- | Truncate the given HTML to a certain length, preserving tags. Returns the truncated Html or `Nothing` if no truncation occured.
 --   Words are preserved, so if the truncated text ends within some word, that whole word is cut.
 truncateHtml :: Int    -- ^ The amount of characters (not counting tags) which the truncated text should have at most
              -> Html   -- ^ The HTML to truncate
              -> Maybe Html  -- ^ `Just` the truncated HTML or `Nothing` if no truncation occured
-truncateHtml n html = case go n html of Tagged n' html' -> if n' <= 0 then Just html' else Nothing
+truncateHtml n html = case go n html of Tagged n' html' -> if n' <= 0 then filterEmptyTags html' else Nothing
     where
         go :: Int -> HtmlM b -> Tagged (HtmlM b)
         go i (Parent t open close content) = fmap (Parent t open close) (go i content)
@@ -88,6 +91,21 @@ truncateHtml n html = case go n html of Tagged n' html' -> if n' <= 0 then Just 
           Tagged j h1' -> fmap (Append h1') (go j h2)
         go i Empty = Tagged i Empty
         go i (Content content) = fmap Content (truncateChoiceString i content)
+        
+        -- filter _trailing_ empty tags
+        filterEmptyTags :: HtmlM a -> Maybe (HtmlM b)
+        filterEmptyTags (Parent t open close content) = fmap (Parent t open close) (filterEmptyTags content)
+        filterEmptyTags (Leaf t begin end) = Nothing
+        filterEmptyTags (AddAttribute t key value h) = fmap (AddAttribute t key value) (filterEmptyTags h)
+        filterEmptyTags (AddCustomAttribute t key value h) = fmap (AddCustomAttribute t key value) (filterEmptyTags h)
+        filterEmptyTags (Append h1 h2) = case filterEmptyTags h2 of
+          Nothing  -> filterEmptyTags h1
+          Just h2' -> Just (Append h1 h2')
+        filterEmptyTags Empty = Nothing
+        filterEmptyTags (Content content) = if (length' content) == 0 then Nothing else Just (Content content)
+        
+        
+
         
 splitAtPreEscaped' :: Int -> ChoiceString -> (ChoiceString, ChoiceString)
 splitAtPreEscaped' i str | i <= 0 = (EmptyChoiceString, str)
