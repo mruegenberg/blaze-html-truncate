@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                blaze-html-truncate
-version:             0.2.0.2
+version:             0.3.0.0
 synopsis:            A truncator for blaze-html
 description:         This package provides a simple function to truncate HTML, preserving tags and preventing cut-off words. 
 homepage:            http://github.com/mruegenberg/blaze-html-truncate
@@ -21,9 +21,11 @@ source-repository head
 
 library
   exposed-modules:     Text.Blaze.Truncate
+  ghc-options:         -Wall
   -- other-modules:       
   build-depends:       base >= 4 && < 5
                      , blaze-markup >= 0.5.1.0
                      , bytestring >= 0.9
                      , text >= 0.10
                      , tagsoup >= 0.10
+                     , html-truncate >= 0.3.0.0
